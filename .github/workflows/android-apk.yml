@@ -28,12 +28,15 @@ jobs:
 
           if [ -d styk-mobile ]; then
             echo "Extracted styk-mobile/"
+            # Avoid "cannot overwrite .github: Directory not empty"
+            rm -rf .github mobile
             shopt -s dotglob
             mv styk-mobile/* .
             rmdir styk-mobile || true
             shopt -u dotglob
           elif [ -d StykAnimate-App-main ]; then
             echo "Extracted StykAnimate-App-main/"
+            rm -rf .github mobile
             shopt -s dotglob
             mv StykAnimate-App-main/* .
             rmdir StykAnimate-App-main || true
@@ -45,6 +48,11 @@ jobs:
           echo "Project root OK"
           ls -la | head -25
           ls src/ai/ 2>/dev/null || echo "(no src/ai)"
+
+      - name: Restore workflow file
+        run: |
+          set -e
+          git checkout HEAD -- .github/workflows/android-apk.yml 2>/dev/null || true
 
       - uses: actions/setup-node@v4
         with:
@@ -88,10 +96,8 @@ jobs:
             echo "Copied src/ai → mobile/www/src/ai"
             ls -la mobile/www/src/ai/
           fi
-          # Patch index.html in www if AI script missing but files exist
           if [ -f mobile/www/index.html ] && [ -d mobile/www/src/ai ]; then
             if ! grep -q "src/ai/" mobile/www/index.html; then
-              # Prefer panel bootstrap if present
               ENTRY=""
               for f in ai-panel.mjs ai-bootstrap.mjs ai-chat.mjs; do
                 if [ -f "mobile/www/src/ai/$f" ]; then ENTRY="$f"; break; fi
